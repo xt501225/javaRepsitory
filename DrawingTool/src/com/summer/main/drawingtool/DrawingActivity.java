@@ -1,11 +1,14 @@
 package com.summer.main.drawingtool;
 
 import java.io.File;
+import java.util.List;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -85,10 +88,29 @@ public class DrawingActivity extends Activity {
 	 */
 	public void onSave(View v) {
 		
-		file = drawingView.getFilePath(Environment.getExternalStorageDirectory()
+		if(isExternalStorageWritable())
+		{
+			file = drawingView.getFilePath(Environment.getExternalStorageDirectory()
 				.getAbsolutePath()+File.separator+"summer",getString(R.string.fileName));
-		drawingView.onSaveImage(this, file);
-		Log.d(TAG, "succeed to save snapShot");
+			drawingView.onSaveImage(this, file);
+			Log.d(TAG, "succeed to save snapShot");
+		}
+		else
+		{
+			Log.d(TAG, "no write permission for writing extenal storage");
+		}
+	}
+	
+	/**
+	 * Checks if external storage is available for read and write
+	 * @return boolean
+	 */
+	public boolean isExternalStorageWritable() {
+	    String state = Environment.getExternalStorageState();
+	    if (Environment.MEDIA_MOUNTED.equals(state)) {
+	        return true;
+	    }
+	    return false;
 	}
 	
 	/**
@@ -102,20 +124,28 @@ public class DrawingActivity extends Activity {
 			this.onSave(v);
 		}
 		
-		Intent email = new Intent(android.content.Intent.ACTION_SEND);    
-		email.setType("application/octet-stream");  
+		// Build the intent
+		Intent emailIntent = new Intent(android.content.Intent.ACTION_SEND);    
+		emailIntent.setType("application/octet-stream");  
 		String[] emailReciver = new String[]{};    
 		String  emailTitle = this.getString(R.string.emailTitle); 
 		String emailContent = this.getString(R.string.emailContent);
 		
-		email.putExtra(android.content.Intent.EXTRA_EMAIL, emailReciver);  
-		email.putExtra(android.content.Intent.EXTRA_SUBJECT, emailTitle);  
-		email.putExtra(android.content.Intent.EXTRA_TEXT, emailContent);  
-		email.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+		emailIntent.putExtra(android.content.Intent.EXTRA_EMAIL, emailReciver);  
+		emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, emailTitle);  
+		emailIntent.putExtra(android.content.Intent.EXTRA_TEXT, emailContent);  
+		emailIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
 		
-		startActivity(email);
-		
-		Log.d(TAG, "succeed to send Email");
+		// Verify it resolves
+		PackageManager packageManager = getPackageManager();
+		List<ResolveInfo> activities = packageManager.queryIntentActivities(emailIntent, 0);
+		boolean isIntentSafe = activities.size() > 0;
+
+		if(isIntentSafe)
+		{
+			startActivity(emailIntent);
+			Log.d(TAG, "succeed to send Email");
+		}
 	}
 	
 	/**
