@@ -60,7 +60,7 @@ SurfaceHolder.Callback {
 		mSurfaceHolder = this.getHolder();
 		mSurfaceHolder.addCallback(this);
 		this.setFocusable(true);
-		new Thread(this).start();
+		//new Thread(this).start();
 	}
 	
 	/**
